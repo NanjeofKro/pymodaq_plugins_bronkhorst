@@ -1,5 +1,5 @@
 [plugin-info]
-SHORT_PLUGIN_NAME = 'pymodaq_plugins_bronkhorst'  
+SHORT_PLUGIN_NAME = 'bronkhorst'  
 
 package-url = 'https://github.com/PyMoDAQ/pymodaq_plugins_template' #to modify
 description = 'Plugin to interface Bronkhorst instruments to PyMoDaq'
@@ -10,7 +10,7 @@ license = 'MIT'
 
 [plugin-install]
 #packages required for your plugin:
-packages-required = ['pymodaq>=4.0.0']
+packages-required = ['pymodaq>=3.0.0']
 
 [build-system]
 requires= ["hatchling"]
@@ -18,9 +18,9 @@ build-backend= "hatchling.build"
 
 [project]
 name="pymodaq_plugins_bronkhorst"
-readme=README.rst
+readme="README.rst"
 classifiers = [
-	"Programming Language :: Python :: 3,
+	"Programming Language :: Python :: 3",
 	"License :: OSI Approved :: MIT License", 
 	"Operating System :: OS Independent", 
 ]

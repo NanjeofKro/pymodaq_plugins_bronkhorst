@@ -3,7 +3,7 @@ from pymodaq.utils.daq_utils import ThreadCommand
 from pymodaq.utils.data import DataFromPlugins, DataToExport
 from pymodaq.control_modules.viewer_utility_classes import DAQ_Viewer_base, comon_parameters, main
 from pymodaq.utils.parameter import Parameter
-from hardwareimport propar as pr
+from ...hardware import propar as pr
 
 
 class PythonWrapperOfYourInstrument:
