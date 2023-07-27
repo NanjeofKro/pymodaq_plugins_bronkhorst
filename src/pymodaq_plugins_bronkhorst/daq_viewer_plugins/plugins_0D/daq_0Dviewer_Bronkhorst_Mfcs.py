@@ -6,12 +6,7 @@ from pymodaq.utils.parameter import Parameter
 from ...hardware import propar as pr
 
 
-class PythonWrapperOfYourInstrument:
-    #  TODO Replace this fake class with the import of the real python wrapper of your instrument
-    pass
-
-
-class DAQ_0DViewer_Template(DAQ_Viewer_base):
+class DAQ_0DViewer_Bronkhorst_MFC(DAQ_Viewer_base):
     """
     """
     params = comon_parameters+[
@@ -58,18 +53,16 @@ class DAQ_0DViewer_Template(DAQ_Viewer_base):
          }
         ]
 
-    def ini_attributes(self,params=params):
+    def ini_attributes(self):
         #  TODO declare the type of the wrapper (and assign it to self.controller) you're going to use for easy
         #  autocompletion
         self.controller=None
-        for param in params:
-            if param["name"]=="com_in":
-                self.com_in=param["value"]
-            if param["name"]=="bus_pos":
-                self.bus_pos=param["value"]
-            if param["name"]=="user_tag":
-                self.user_tag==param["value"]
-        self.master=None
+        self.com_in=None
+        self.bus_pos=None
+        self.user_tag=None
+        self.unit=None
+        self.data_offset=None
+        self.data_span=None
         
         #TODO declare here attributes you want/need to init with a default value
 
@@ -82,12 +75,16 @@ class DAQ_0DViewer_Template(DAQ_Viewer_base):
             A given parameter (within detector_settings) whose value has been changed by the user
         """
         ## TODO for your custom plugin
-        if param.name() == "a_parameter_you've_added_in_self.params":
-           self.controller.your_method_to_apply_this_param_change()  # when writing your own plugin replace this line
-#        elif ...
-        ##
-
-    def ini_detector(self, COM_in,controller=None,):
+        if param.name() == "COM_in":
+            self.com_in==param.value()
+            self.controller.your_method_to_apply_this_param_change()  # when writing your own plugin replace this line
+        elif param.name() == "bus_pos":
+            self.bus_pos=param.value()
+        elif param.name() == "user_tag":
+            self.controller.writeParameter(115,param.value())
+            self.user_tag=param.value()
+        
+    def ini_detector(self, controller=None):
         """Detector communication initialization
 
         Parameters
@@ -102,18 +99,27 @@ class DAQ_0DViewer_Template(DAQ_Viewer_base):
         initialized: bool
             False if initialization failed otherwise True
         """
-
-        raise NotImplemented  # TODO when writing your own plugin remove this line and modify the one below
+        if self.com_in==None:
+            raise ParameterError()
+            print('self.com_in has no value; cannot initialise serial communication')
+        if self.bus_pos==None:
+            raise ParameterError()
+            print('self.bus_pos has no value; cannot initialise serial communication')
+          # TODO when writing your own plugin remove this line and modify the one below
         self.ini_detector_init(old_controller=controller,
                                new_controller=pr.instrument(self.com_in, self.bus_pos))
+        self.user_tag=self.controller.readParameter(115)
+        self.unit=self.controller.readParameter(129)
+        self.data_offset=self.controller.readParameter(183)
+        self.data_span=self.controller.readParameter(21)-self.data_offset
         # TODO for your custom plugin (optional) initialize viewers panel with the future type of data
         self.dte_signal_temp.emit(DataToExport(name='pymodaq_plugins_bronkhorst',
-                                               data=DataFromPlugins(name=self.controller.readParameter(115),
+                                               data=DataFromPlugins(name='Bronk_MFC_'+self.user_tag,
                                                                     data=[np.array([0]), np.array([0])],
                                                                     dim='Data0D',
-                                                                    labels=[self.controller.readParameters(115), 'label2'])))
+                                                                    labels=['Flow ('+self.unit+')', 'label2'])))
 
-        info = "Whatever info you want to log"
+        info = "Found MFC with user tag = "+self.user_tag
         initialized = self.controller.wink()
         return info, initialized
 
@@ -137,16 +143,15 @@ class DAQ_0DViewer_Template(DAQ_Viewer_base):
         ## TODO for your custom plugin
 
         # synchrone version (blocking function)
-        raise NotImplemented  # when writing your own plugin remove this line
-        data_tot = self.controller.your_method_to_start_a_grab_snap()
-        self.dte_signal.emit(DataToExport(name='myplugin',
-                                          data=[DataFromPlugins(name='Mock1', data=data_tot,
-                                                                dim='Data0D', labels=['dat0', 'data1'])]))
+        data_tot = np.asarray(self.controller.get_data())
+        self.dte_signal.emit(DataToExport(name='pymodaq_plugins_bronkhorst',
+                                          data=[DataFromPlugins(name='Bronk_MFC_'+self.user_tag, data=data_tot,
+                                                                dim='Data0D', labels=['Flow ('+self.unit+')', 'data1'])]))
         #########################################################
 
         # asynchrone version (non-blocking function with callback)
-        raise NotImplemented  # when writing your own plugin remove this line
-        self.controller.your_method_to_start_a_grab_snap(self.callback)  # when writing your own plugin replace this line
+        #raise NotImplemented  # when writing your own plugin remove this line
+        #self.controller.your_method_to_start_a_grab_snap(self.callback)  # when writing your own plugin replace this line
         #########################################################
 
 
@@ -160,12 +165,23 @@ class DAQ_0DViewer_Template(DAQ_Viewer_base):
     def stop(self):
         """Stop the current grab hardware wise if necessary"""
         ## TODO for your custom plugin
-        raise NotImplemented  # when writing your own plugin remove this line
-        self.controller.your_method_to_stop_acquisition()  # when writing your own plugin replace this line
-        self.emit_status(ThreadCommand('Update_Status', ['Some info you want to log']))
+        #raise NotImplemented  # when writing your own plugin remove this line
+        #self.controller.your_method_to_stop_acquisition()  # when writing your own plugin replace this line
+        self.emit_status(ThreadCommand('Update_Status', ['End of acquisition']))
         ##############################
         return ''
-
+    def get_data(self):
+        
+        raw_data=self.controller.readParameter(8)
+        #Magic numbers from Bronkhorst documentation:
+        if raw_data<41943:
+            data=raw_data/32000*self.data_span+self.data_offset
+        else:
+            data=(0.003125*raw_data-204.799)*self.data_span+self.data_offset 
+        return data
 
 if __name__ == '__main__':
     main(__file__)
+
+class ParameterError(Exception):
+    print('Parameter has no value')
