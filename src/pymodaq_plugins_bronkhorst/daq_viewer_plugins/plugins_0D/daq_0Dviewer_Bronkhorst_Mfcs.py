@@ -6,7 +6,7 @@ from pymodaq.utils.parameter import Parameter
 from ...hardware import propar as pr
 
 
-class DAQ_0DViewer_Bronkhorst_MFC(DAQ_Viewer_base):
+class DAQ_0DViewer_Bronkhorst_Mfcs(DAQ_Viewer_base):
     """
     """
     params = comon_parameters+[
@@ -77,12 +77,15 @@ class DAQ_0DViewer_Bronkhorst_MFC(DAQ_Viewer_base):
         ## TODO for your custom plugin
         if param.name() == "COM_in":
             self.com_in==param.value()
-            self.controller.your_method_to_apply_this_param_change()  # when writing your own plugin replace this line
+            self.ini_detector(self.controller)  # when writing your own plugin replace this line
         elif param.name() == "bus_pos":
             self.bus_pos=param.value()
+            self.ini_detector(self.controller)
         elif param.name() == "user_tag":
             self.controller.writeParameter(115,param.value())
             self.user_tag=param.value()
+            
+
         
     def ini_detector(self, controller=None):
         """Detector communication initialization
