@@ -76,11 +76,15 @@ class DAQ_0DViewer_Bronkhorst_Mfcs(DAQ_Viewer_base):
         """
         ## TODO for your custom plugin
         if param.name() == "COM_in":
-            self.com_in==param.value()
-            self.ini_detector(self.controller)  # when writing your own plugin replace this line
+            old_com=self.com_in
+            self.com_in=param.value()
+            if old_com!=None:
+                self.ini_detector(self.controller)  # when writing your own plugin replace this line
         elif param.name() == "bus_pos":
+            old_pos=self.bus_pos
             self.bus_pos=param.value()
-            self.ini_detector(self.controller)
+            if old_pos!=None:
+                self.ini_detector(self.controller)
         elif param.name() == "user_tag":
             self.controller.writeParameter(115,param.value())
             self.user_tag=param.value()
@@ -116,11 +120,11 @@ class DAQ_0DViewer_Bronkhorst_Mfcs(DAQ_Viewer_base):
         self.data_offset=self.controller.readParameter(183)
         self.data_span=self.controller.readParameter(21)-self.data_offset
         # TODO for your custom plugin (optional) initialize viewers panel with the future type of data
-        self.dte_signal_temp.emit(DataToExport(name='pymodaq_plugins_bronkhorst',
-                                               data=DataFromPlugins(name='Bronk_MFC_'+self.user_tag,
+        self.data_grabed_signal_temp.emit([DataFromPlugins(name='Bronk_MFC_'+self.user_tag,
                                                                     data=[np.array([0]), np.array([0])],
                                                                     dim='Data0D',
-                                                                    labels=['Flow ('+self.unit+')', 'label2'])))
+                                                                    labels=['Flow ('+self.unit+')', 'label2'])])#DataToExport(name='pymodaq_plugins_bronkhorst',
+                                                                                                           #data=
 
         info = "Found MFC with user tag = "+self.user_tag
         initialized = self.controller.wink()
@@ -146,10 +150,9 @@ class DAQ_0DViewer_Bronkhorst_Mfcs(DAQ_Viewer_base):
         ## TODO for your custom plugin
 
         # synchrone version (blocking function)
-        data_tot = np.asarray(self.controller.get_data())
-        self.dte_signal.emit(DataToExport(name='pymodaq_plugins_bronkhorst',
-                                          data=[DataFromPlugins(name='Bronk_MFC_'+self.user_tag, data=data_tot,
-                                                                dim='Data0D', labels=['Flow ('+self.unit+')', 'data1'])]))
+        data_tot = [np.asarray(self.get_data())]
+        self.data_grabed_signal.emit([DataFromPlugins(name='Bronk_MFC_'+self.user_tag, data=data_tot,
+                                                                dim='Data0D', labels=['Flow ('+self.unit+')', 'data1'])])
         #########################################################
 
         # asynchrone version (non-blocking function with callback)
@@ -161,15 +164,15 @@ class DAQ_0DViewer_Bronkhorst_Mfcs(DAQ_Viewer_base):
     def callback(self):
         """optional asynchrone method called when the detector has finished its acquisition of data"""
         data_tot = self.controller.your_method_to_get_data_from_buffer()
-        self.dte_signal.emit(DataToExport(name='myplugin',
-                                          data=[DataFromPlugins(name=self.controller.readParameter(115), data=data_tot,
-                                                                dim='Data0D', labels=['dat0', 'data1'])]))
+        self.data_grabed_signal.emit([DataFromPlugins(name=self.controller.readParameter(115), data=data_tot,
+                                                                dim='Data0D', labels=['dat0', 'data1'])])
 
     def stop(self):
         """Stop the current grab hardware wise if necessary"""
         ## TODO for your custom plugin
         #raise NotImplemented  # when writing your own plugin remove this line
         #self.controller.your_method_to_stop_acquisition()  # when writing your own plugin replace this line
+        self.controller.master.stop()
         self.emit_status(ThreadCommand('Update_Status', ['End of acquisition']))
         ##############################
         return ''
